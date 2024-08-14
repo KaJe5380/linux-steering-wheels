@@ -161,6 +161,26 @@ The environment variable `SDL_JOYSTICK_WHEEL_DEVICES` can be used to fix it.
 
 [Link to the Proton issue](https://github.com/ValveSoftware/Proton/issues/5126)
 
+### USB HIDRAW Device Detection
+In some cases, certain devices (e.g., pedals, shifters, handbrakes, etc) may not be detected properly when using Proton. To resolve this, you'll need to pass the HIDRAW interface directly to Proton using a custom udev rule like so:
+```BASH
+KERNEL=="hidraw*", ATTRS{idVendor}=="<VID>", ATTRS{idProduct}=="<PID>", MODE="0660", TAG+="uaccess"
+```
+If you think permissions are too loose, then see
+[here](http://reactivated.net/writing_udev_rules.html) for more information on finer grained permission setting
+
+Store rule in `/etc/udev/rules.d/` as `60-<name>.rules`
+You should be able to just unplug and replug the device to make it work.
+
+And you'll want to include it within Steam game launch commands like so:
+```BASH
+## Single device:
+PROTON_ENABLE_HIDRAW=0x<VID>/0x<PID> %command%
+
+## Multiple devices:
+PROTON_ENABLE_HIDRAW=0x<VID1>/0x<PID1>,0x<VID2>/0x<PID2> %command%
+```
+
 ## Steam settings for ~all devices and ~all games
 
 1. Turn Steam Input off in game settings
@@ -172,6 +192,22 @@ The environment variable `SDL_JOYSTICK_WHEEL_DEVICES` can be used to fix it.
     This is only relevant for devices which are, for various reasons, not in a SDL whitelist[^14] (yet), or for older Steam runtime versions which does not have updated SDL library.
 
 4. If none of that worked, create an issue, where members of the community will try to help you with your specific game
+
+## Games
+### Dirt Series (eg: Dirt 4, Dirt Rally 2.0)
+Dirt Series can sometimes struggle with detecting specifc input devices, which which may also lead to issues with force feedback functionality. If your device is not recognized, you might need to manually add it to the game files to resolve this issue.
+
+Within the game installation directory, go to `input\devices` directory and open the file: `device_defines.xml` in a text editor. By default the XML file should have a comment explaining all the properties for adding a device.
+
+The basic template looks like this
+```XML
+<device official="false" name="<device name>" type="<type>" id="{<PID><VID>-0000-0000-0000-504944564944}" priority="<priority>"/>
+```
+Add your device by replacing the placeholder values in the example with your device's details. For instance, to add a Cammus C12, you would use the following line:
+```XML
+<device official="false" name="cammus_c12_base" type="wheel" id="{03023416-0000-0000-0000-504944564944}" priority="100"/>
+```
+Save the file and restart the game.
 
 ## Links
 
